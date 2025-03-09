@@ -56,7 +56,7 @@ jobs:
           uv python install 3.12
           uv sync
           uv pip install -e .
-          .\venv\Scripts\Activate.ps1
+          .venv\Scripts\Activate.ps1
 
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
