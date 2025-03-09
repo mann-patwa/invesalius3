@@ -39,11 +39,11 @@ jobs:
       - name: install uv
         run: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-      # - name: Setup Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.11.2"
-      #     cache: "pip"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.2"
+          cache: "pip"
 
       # - name: Upgrade pip and enable wheel support
       #   run: python -m pip install --upgrade pip setuptools wheel
@@ -53,15 +53,13 @@ jobs:
 
       - name: Install InVesalius requirements and compile cython parts
         run: |
-          uv python install 3.12
-          uv sync
-          uv pip install -e .
-          .venv\Scripts\Activate.ps1
+           pip install -e  . 
+          
 
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
-        run: uv pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+        run:  pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
       # - name: Compile InVesalius Cython parts
       #   run: |
@@ -69,7 +67,7 @@ jobs:
       #     python3 setup.py build_plugins
 
       - name: Insert version and commit hash into dialog.py
-        run: uv run bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
+        run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -87,9 +85,9 @@ jobs:
       - name: Compile pyinstaller bootloader
         run: |
           cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
-          uv run ./waf distclean all
+          python3 ./waf distclean all
           cd ..
-          uv pip install .
+          pip install .
 
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
