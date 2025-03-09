@@ -68,7 +68,7 @@ jobs:
       #     python3 setup.py build_plugins
 
       - name: Insert version and commit hash into dialog.py
-        run: uv python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
+        run: uv python bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -86,7 +86,7 @@ jobs:
       - name: Compile pyinstaller bootloader
         run: |
           cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
-          uv python3 ./waf distclean all
+          uv python ./waf distclean all
           cd ..
           uv pip install .
 
