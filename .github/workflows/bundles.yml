@@ -51,7 +51,7 @@ jobs:
           pwd
           Get-Command python | fl *
           pip list
-          pip install --no-build-isolation .
+          pip install .
           pip list
           Get-Childitem C:\\hostedtoolcache\\windows\\Python\\3.11.2\\x64\\Lib\\site-packages
 
