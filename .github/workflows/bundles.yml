@@ -50,7 +50,10 @@ jobs:
         run: |
           pwd
           Get-Command python | fl *
+          pip list
           pip install .
+          pip list
+          Get-Childitem C:\\hostedtoolcache\\windows\\Python\\3.11.2\\x64\\Lib\\site-packages
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
