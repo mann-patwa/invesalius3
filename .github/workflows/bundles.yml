@@ -49,7 +49,7 @@ jobs:
           $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
           uv sync 
           uv pip install .
-          source .venv\Scripts\activate
+          .venv\Scripts\activate
           which python
           
 
@@ -67,8 +67,8 @@ jobs:
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
         run: |
-          source .venv\Scripts\activate
-          uv pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+          .venv\Scripts\activate
+          uv pip install  torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
   
       # - name: Compile InVesalius Cython parts
       #   run: |
@@ -77,8 +77,8 @@ jobs:
 
       - name: Insert version and commit hash into dialog.py
         run: |
-          source .venv\Scripts\activate
-          python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
+          .venv\Scripts\activate
+          uv run bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -95,7 +95,7 @@ jobs:
 
       - name: Compile pyinstaller bootloader
         run: |
-              source .venv\Scripts\activate
+              .venv\Scripts\activate
               cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
               cd ..
@@ -148,7 +148,7 @@ jobs:
 
       - name: Generate InVesalius .exe file
         run: |
-              source .venv\Scripts\activate
+              .venv\Scripts\activate
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
               mkdir installer
