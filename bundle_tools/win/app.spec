@@ -15,7 +15,8 @@ from PyInstaller.utils.hooks import get_module_file_attribute, collect_dynamic_l
 from PyInstaller.compat import is_win
 
 python_dir = os.path.dirname(sys.executable)
-site_packages = os.path.join(python_dir,'Lib','site-packages')
+venv_dir = os.path.dirname(python_dir) #in virtual environments, site packages in .venv/Lib/
+site_packages = os.path.join(venv_dir,'Lib','site-packages')
 
 
 def check_extension(item): 
