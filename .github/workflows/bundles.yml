@@ -12,10 +12,10 @@ jobs:
   build-win:
     name: build windows packages
     runs-on: windows-latest
-    strategy:
-      matrix:
-        architecture: ['x64']
-        ai_ready: [0, 1]
+    # strategy:
+    #   matrix:
+    #     architecture: ['x64']
+    #     ai_ready: [0, 1]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,10 +56,10 @@ jobs:
         if: ${{ matrix.ai_ready == 1}}
         run: pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
-      - name: Compile InVesalius Cython parts
-        run: |
-              python3 setup.py build_ext --inplace
-              python3 setup.py build_plugins
+      # - name: Compile InVesalius Cython parts
+      #   run: |
+      #         python3 setup.py build_ext --inplace
+      #         python3 setup.py build_plugins
 
       - name: Insert version and commit hash into dialog.py
         run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
