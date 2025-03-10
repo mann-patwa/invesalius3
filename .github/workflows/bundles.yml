@@ -37,11 +37,11 @@ jobs:
           vsversion: '17.0'
           arch: ${{ matrix.architecture }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11.2"
-          cache: "pip"
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.11.2"
+      #     cache: "pip"
     
       - name: install uv
         run: |
@@ -51,6 +51,7 @@ jobs:
           uv pip install .
           .venv\Scripts\activate
           which python
+          dir .venv\Lib\site-packages
           
 
       # - name: Upgrade pip and enable wheel support
