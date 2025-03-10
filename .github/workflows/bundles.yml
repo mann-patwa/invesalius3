@@ -47,6 +47,7 @@ jobs:
         run: |
           powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.6.5/install.ps1 | iex"
           $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
+          uv venv --python 3.12
           uv sync 
           uv pip install .
           .venv\Scripts\activate
