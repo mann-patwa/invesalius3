@@ -47,7 +47,9 @@ jobs:
         run: |
           powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.6.5/install.ps1 | iex"
           $env:Path = "C:\Users\runneradmin\.local\bin;$env:Path"
-          uv pip install --system . 
+          uv sync 
+          uv pip install .
+          source .venv\Scripts\activate
           which python
           
 
@@ -64,15 +66,19 @@ jobs:
 
       - name: Install Pytorch + Cuda 11.8 (only ai-ready build)
         if: ${{ matrix.ai_ready == 1}}
-        run: pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
+        run: |
+          source .venv\Scripts\activate
+          uv pip install torch==2.3.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+  
       # - name: Compile InVesalius Cython parts
       #   run: |
       #         python3 setup.py build_ext --inplace
       #         python3 setup.py build_plugins
 
       - name: Insert version and commit hash into dialog.py
-        run: python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
+        run: |
+          source .venv\Scripts\activate
+          python3 bundle_tools/win/insert_version_date.py ./invesalius/gui/dialogs.py ${{ env.DATE }} ${{ env.COMMIT }} nightly
 
       - uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
         id: pyinstaller
@@ -89,10 +95,11 @@ jobs:
 
       - name: Compile pyinstaller bootloader
         run: |
+              source .venv\Scripts\activate
               cd ./pyinstaller/pyinstaller-6.9.0/bootloader/
               python3 ./waf distclean all
               cd ..
-              pip install .
+              uv pip install .
 
       - name: Download mandible ai weight
         if: ${{ matrix.ai_ready == 1 }}
@@ -141,6 +148,7 @@ jobs:
 
       - name: Generate InVesalius .exe file
         run: |
+              source .venv\Scripts\activate
               cp ./bundle_tools/win/app.spec ./  
               pyinstaller app.spec --clean --noconfirm
               mkdir installer
