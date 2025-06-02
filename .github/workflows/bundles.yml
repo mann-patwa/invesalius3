@@ -45,6 +45,7 @@ jobs:
 
       - name: copy .pyd files to invesalius_cy
         run: |
+          ls
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
 
       - name: Download mandible ai weight
