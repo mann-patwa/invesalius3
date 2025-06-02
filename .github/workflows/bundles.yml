@@ -33,7 +33,11 @@ jobs:
           python-version: 3.12
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-
+          
+      - name: ls directory before uv sync
+        run: |
+          ls
+          ls invesalius_cy
       - name: install venv and sync dependencies
         run: |
           uv sync --all-extras
@@ -46,6 +50,7 @@ jobs:
       - name: copy .pyd files to invesalius_cy
         run: |
           ls
+          ls invesalius_cy\Release
           Copy-Item -Path invesalius_cy\Release\* -Destination invesalius_cy -Recurse -Force
 
       - name: Download mandible ai weight
