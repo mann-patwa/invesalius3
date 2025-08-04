@@ -108,10 +108,12 @@ jobs:
       - name: Show files
         run: |
           ls -lh
+          
       - name: Setup node(npm)
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '20.1'
+          
       - name: Create DMG
         run: |
           npm install --global create-dmg
