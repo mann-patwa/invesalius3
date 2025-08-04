@@ -1,0 +1,168 @@
+name: generate mac bundles
+
+on:
+  workflow_dispatch:
+    inputs:
+      ai_ready:
+        description: "Build with AI-ready weights"
+        required: false
+        default: "false"
+        type: boolean
+
+
+jobs:
+  build-mac-arm:
+    name: build mac packages
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        architecture: ["arm64"]
+        ai_ready: [1]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Put current date into a variable
+        run: |
+          DATE=$(date +"%Y-%m-%d")
+          echo "DATE=$DATE" >> $GITHUB_ENV
+
+      - name: Put current commit hash in a variable
+        run: |
+          COMMIT=$(git rev-parse HEAD)
+          echo "COMMIT=$COMMIT" >> $GITHUB_ENV
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: install venv and sync dependencies
+        run: |
+          uv sync --all-extras
+
+      - name: Get InVesalius version
+        run: |
+          INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
+          echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $GITHUB_ENV
+
+      - name: copy .so files to invesalius_cy
+        run: |
+          cp invesalius_cy/Release/* invesalius_cy/ || true
+
+      - name: Download mandible ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
+          target: ./ai/mandible_jit_ct/
+
+      - name: Download cranioplasty binary ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
+          target: ./ai/cranioplasty_jit_ct_binary/
+
+      - name: Download cranioplasty gray ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
+          target: ./ai/cranioplasty_jit_ct_gray/
+
+      - name: Download trachea ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
+          target: ./ai/trachea_ct/
+
+      - name: Fix trachea name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        run: |
+          move ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
+
+      - name: Download brain ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
+          target: ./ai/brain_mri_t1/
+
+      - name: Fix brain name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        run: |
+          move ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
+
+      - name: Generate InVesalius .app bundle
+        run: |
+          cp ./bundle_tools/mac/app.spec ./
+          uv run pyinstaller app.spec --clean --noconfirm
+          mkdir installer
+          #  Move the .app bundle to installer directory
+          # mv dist/InVesalius3.app installer/
+
+      - name: Show files
+        run: |
+          ls -lh
+      - name: Setup node(npm)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Create DMG
+        run: |
+          npm install --global create-dmg
+          ls dist
+
+      # - name: Upload artifact of package normal file
+      #   if: ${{ matrix.ai_ready == 0}}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     overwrite: true
+      #     name: invesalius_package_exe_normal
+      #     retention-days: 2
+      #     path: ./installer/*.exe
+
+  #     - name: Upload artifact of package ai-ready file
+  #       if: ${{ matrix.ai_ready == 1}}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         overwrite: true
+  #         name: invesalius_package_app_ai-ready
+  #         retention-days: 2
+  #         path: ./installer/InVesalius3.app
+
+  #     - name: Delete previous nightly release
+  #       run: gh release delete nightly --yes --cleanup-tag
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # publish_packages:
+  #   name: publish packages
+  #   needs: build-mac-arm
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: invesalius_package_app_ai-ready
+  #         path: ./
+  #     - name: Message
+  #       run: |
+  #         ls -lh
+  #     - name: Update Nightly Release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         tag_name: nightly
+  #         name: "Nightly Build"
+  #         body: |
+  #           This is a nightly release InVesalius.
+  #           It's unstable compared to the official releases, **use it with caution**!
+  #         draft: false
+  #         prerelease: true
+  #         files: |
+  #           ./InVesalius3.app
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
