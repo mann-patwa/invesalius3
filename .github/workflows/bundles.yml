@@ -6,6 +6,120 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-linux:
+    name: build linux packages
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        architecture: ["x64"]
+        ai_ready: [1]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Put current date into a variable
+        run: echo "DATE=$(date +"%Y-%m-%d")" >> $GITHUB_ENV
+  
+      - name: Put current commit hash in a variable
+        run: echo "COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+  
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+  
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y \
+          freeglut3 \
+          freeglut3-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libgstreamer-plugins-base1.0-dev \
+          libgtk-3-dev \
+          libjpeg-dev \
+          libnotify-dev \
+          libsdl2-dev \
+          libsm-dev \
+          libtiff-dev \
+          libwebkit2gtk-4.0-dev \
+          libxtst-dev \
+          python3-dev \
+          libhdf5-dev \
+          build-essential \
+          python3-venv
+  
+      - name: install venv and sync dependencies
+        run: uv sync --all-extras
+  
+      - name: Get InVesalius version
+        run: |
+          INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
+          echo "INVESALIUS_VERSION=$INVESALIUS_VERSION" >> $GITHUB_ENV
+  
+      - name: copy .so files to invesalius_cy
+        run: cp invesalius_cy/Release/* invesalius_cy/ || true
+  
+      # AI weights download steps (same as other jobs)
+      - name: Download mandible ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/mandible_ct/mandible_jit_ct.pt"
+          target: ./ai/mandible_jit_ct/
+      - name: Download cranioplasty binary ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_binary/cranioplasty_jit_ct_binary.pt"
+          target: ./ai/cranioplasty_jit_ct_binary/
+      - name: Download cranioplasty gray ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://raw.githubusercontent.com/invesalius/weights/main/cranioplasty_jit_ct_gray/cranioplasty_jit_ct_gray.pt"
+          target: ./ai/cranioplasty_jit_ct_gray/
+      - name: Download trachea ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://github.com/tfmoraes/deep_trachea_torch/releases/download/v1.0/weights.pt"
+          target: ./ai/trachea_ct/
+      - name: Fix trachea name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        run: mv ./ai/trachea_ct/weights.pt ./ai/trachea_ct/trachea_ct.pt
+      - name: Download brain ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
+        with:
+          url: "https://github.com/tfmoraes/deepbrain_torch/releases/download/v1.1.0/weights.pt"
+          target: ./ai/brain_mri_t1/
+      - name: Fix brain name ai weight
+        if: ${{ matrix.ai_ready == 1 }}
+        run: mv ./ai/brain_mri_t1/weights.pt ./ai/brain_mri_t1/brain_mri_t1.pt
+  
+      - name: Generate InVesalius Linux binary
+        run: |
+          cp ./bundle_tools/linux/app.spec ./
+          uv run pyinstaller app.spec --clean --noconfirm
+  
+      - name: Package as tar.gz
+        run: |
+          mkdir installer
+          tar -czvf installer/invesalius-${{ env.INVESALIUS_VERSION }}-nightly_linux_x64.tar.gz dist/
+  
+      - name: Upload artifact of package ai-ready file
+        if: ${{ matrix.ai_ready == 1 }}
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: invesalius_package_linux_ai-ready
+          retention-days: 2
+          path: ./installer/*.tar.gz
+          
   build-win:
       name: build windows packages
       runs-on: windows-latest
@@ -214,7 +328,7 @@ jobs:
 
   publish_packages:
     name: publish packages
-    needs: [build-mac, build-win]
+    needs: [build-mac, build-win, build-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -244,5 +358,6 @@ jobs:
           files: |
             ./*.dmg
             ./*.exe
+            ./*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
