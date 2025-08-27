@@ -52,8 +52,11 @@ jobs:
           python3-venv
   
       - name: install venv and sync dependencies
-        run: uv sync --all-extras
-  
+      
+        run: |
+          rm __init__.py
+          uv sync --all-extras
+          
       - name: Get InVesalius version
         run: |
           INVESALIUS_VERSION=$(uv run python -c "import importlib.metadata; print(importlib.metadata.version('invesalius'))")
