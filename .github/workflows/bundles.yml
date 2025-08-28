@@ -121,6 +121,7 @@ jobs:
           name: invesalius_package_linux_ai-ready
           retention-days: 2
           path: ./installer/*.tar.gz
+          compression-level: 0
           
   build-win:
       name: build windows packages
